@@ -1,0 +1,66 @@
+{
+	"orders": [
+		{
+			"id": "1",
+			"weight": 100,
+			"destination": "Lisbon",
+			"coordinates": [38.7169, -9.1399],
+			"vehiclePlate": null,
+			"observations": "",
+			"completed": false
+		},
+		{
+			"id": "2",
+			"weight": 50,
+			"destination": "Porto",
+			"coordinates": [41.1579, -8.6291],
+			"vehiclePlate": "AA-00-BB",
+			"observations": "Priority delivery",
+			"completed": false
+		},
+		{
+			"id": "3",
+			"weight": 120,
+			"destination": "Coimbra",
+			"coordinates": [40.2033, -8.4103],
+			"vehiclePlate": null,
+			"observations": "Leave at reception",
+			"completed": false
+		},
+		{
+			"id": "4",
+			"weight": 80,
+			"destination": "Faro",
+			"coordinates": [37.0194, -7.9304],
+			"vehiclePlate": "BB-11-CC",
+			"observations": "",
+			"completed": true
+		}
+	],
+	"vehicles": [
+		{
+			"plateNumber": "AA-00-BB",
+			"capacity": 200,
+			"availableCapacity": 150,
+			"favorite": false
+		},
+		{
+			"plateNumber": "BB-11-CC",
+			"capacity": 300,
+			"availableCapacity": 120,
+			"favorite": true
+		},
+		{
+			"plateNumber": "CC-22-DD",
+			"capacity": 400,
+			"availableCapacity": 400,
+			"favorite": false
+		},
+		{
+			"plateNumber": "DD-33-EE",
+			"capacity": 250,
+			"availableCapacity": 250,
+			"favorite": true
+		}
+	]
+}

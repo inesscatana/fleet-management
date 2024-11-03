@@ -1,0 +1,20 @@
+services:
+  fleet-management:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3000'
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_HERE_API_KEY=${NEXT_PUBLIC_HERE_API_KEY}
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  json-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.json-server
+    ports:
+      - '4000:4000'

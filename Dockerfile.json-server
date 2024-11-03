@@ -1,0 +1,17 @@
+# Use Node.js 20 for the json-server container
+FROM node:20-alpine
+
+# Install json-server globally
+RUN npm install -g json-server
+
+# Set working directory
+WORKDIR /app
+
+# Copy db.json into the container
+COPY db.json /data/db.json
+
+# Expose the port
+EXPOSE 4000
+
+# Command to run json-server
+CMD ["json-server", "--watch", "/data/db.json", "--port", "4000"]
