@@ -31,17 +31,20 @@ import {
 	assignOrderToVehicle,
 	Order,
 	removeOrder,
-	sortOrdersByDistance,
+	calculateOptimalRoute,
 	updateOrder,
 } from '@/redux/slices/ordersSlice'
+import VehicleList from '@/components/VehicleList'
+import OrderList from '@/components/OrderList'
 
-type SortColumn =
+export type SortColumn =
 	| 'id'
 	| 'destination'
 	| 'weight'
 	| 'capacity'
 	| 'availableCapacity'
 	| 'favorite'
+	| 'status'
 type SortDirection = 'asc' | 'desc'
 
 export default function DashboardPage() {
@@ -61,7 +64,7 @@ export default function DashboardPage() {
 	useEffect(() => {
 		const loadOrders = async () => {
 			setLoadingOrders(true)
-			await dispatch(sortOrdersByDistance())
+			await dispatch(calculateOptimalRoute())
 			setLoadingOrders(false)
 		}
 
@@ -134,19 +137,38 @@ export default function DashboardPage() {
 		}
 	}
 
+	const handleSaveOrder = (updatedOrder: Order) => {
+		dispatch(updateOrder(updatedOrder))
+		toast.success('Order updated successfully!')
+		setShowOrderForm(false)
+		setSelectedOrder(null)
+	}
+
+	const handleCompleteOrder = (orderId: string) => {
+		const order = orders.find((o) => o.id === orderId)
+		if (order) {
+			dispatch(updateOrder({ ...order, completed: true }))
+			toast.success('Order marked as complete!')
+		}
+	}
+
 	const filteredOrders = orders
 		.filter((order) =>
 			order.destination.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 		.sort((a, b) => {
 			let comparison = 0
+
 			if (sortColumn === 'id') {
 				comparison = a.id.localeCompare(b.id)
 			} else if (sortColumn === 'destination') {
 				comparison = a.destination.localeCompare(b.destination)
 			} else if (sortColumn === 'weight') {
 				comparison = a.weight - b.weight
+			} else if (sortColumn === 'status') {
+				comparison = Number(a.completed) - Number(b.completed)
 			}
+
 			return sortDirection === 'asc' ? comparison : -comparison
 		})
 
@@ -196,6 +218,7 @@ export default function DashboardPage() {
 					onClose={() => setShowOrderForm(false)}
 					open={showOrderForm}
 					order={selectedOrder}
+					onSave={handleSaveOrder}
 				/>
 			)}
 
@@ -207,79 +230,16 @@ export default function DashboardPage() {
 					<CircularProgress color="secondary" />
 				</Box>
 			) : (
-				<TableContainer component={Paper} sx={{ mb: 4 }}>
-					<Table>
-						<TableHead>
-							<TableRow>
-								<TableCell
-									onClick={() => handleSort('id')}
-									style={{ cursor: 'pointer', fontWeight: 'bold' }}
-								>
-									ID{' '}
-									{sortColumn === 'id'
-										? sortDirection === 'asc'
-											? '↑'
-											: '↓'
-										: ''}
-								</TableCell>
-								<TableCell
-									onClick={() => handleSort('destination')}
-									style={{ cursor: 'pointer', fontWeight: 'bold' }}
-								>
-									Destination{' '}
-									{sortColumn === 'destination'
-										? sortDirection === 'asc'
-											? '↑'
-											: '↓'
-										: ''}
-								</TableCell>
-								<TableCell
-									onClick={() => handleSort('weight')}
-									style={{ cursor: 'pointer', fontWeight: 'bold' }}
-								>
-									Weight (kg){' '}
-									{sortColumn === 'weight'
-										? sortDirection === 'asc'
-											? '↑'
-											: '↓'
-										: ''}
-								</TableCell>
-								<TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
-								<TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{filteredOrders.map((order) => (
-								<TableRow key={order.id}>
-									<TableCell>{order.id}</TableCell>
-									<TableCell>{order.destination}</TableCell>
-									<TableCell>{order.weight}</TableCell>
-									<TableCell>{order.observations || 'N/A'}</TableCell>
-									<TableCell>
-										<IconButton
-											onClick={() => handleEditOrder(order)}
-											color="primary"
-										>
-											<EditIcon />
-										</IconButton>
-										<IconButton
-											onClick={() => handleRemoveOrder(order.id)}
-											color="error"
-										>
-											<DeleteIcon />
-										</IconButton>
-										<Button
-											color="primary"
-											onClick={() => handleAssignVehicle(order)}
-										>
-											Assign Vehicle
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</TableContainer>
+				<OrderList
+					orders={filteredOrders}
+					onEditOrder={handleEditOrder}
+					onCompleteOrder={handleCompleteOrder}
+					onRemoveOrder={handleRemoveOrder}
+					onAssignVehicle={handleAssignVehicle}
+					handleSort={handleSort}
+					sortColumn={sortColumn}
+					sortDirection={sortDirection}
+				/>
 			)}
 
 			<Typography variant="h5" gutterBottom color="primary">
@@ -290,83 +250,14 @@ export default function DashboardPage() {
 					<CircularProgress color="secondary" />
 				</Box>
 			) : (
-				<TableContainer component={Paper}>
-					<Table>
-						<TableHead>
-							<TableRow>
-								<TableCell sx={{ fontWeight: 'bold' }}>Plate</TableCell>
-								<TableCell
-									onClick={() => handleSort('capacity')}
-									style={{ cursor: 'pointer', fontWeight: 'bold' }}
-								>
-									Max Capacity (kg){' '}
-									{sortColumn === 'capacity'
-										? sortDirection === 'asc'
-											? '↑'
-											: '↓'
-										: ''}
-								</TableCell>
-								<TableCell
-									onClick={() => handleSort('availableCapacity')}
-									style={{ cursor: 'pointer', fontWeight: 'bold' }}
-								>
-									Available Capacity (kg){' '}
-									{sortColumn === 'availableCapacity'
-										? sortDirection === 'asc'
-											? '↑'
-											: '↓'
-										: ''}
-								</TableCell>
-								<TableCell sx={{ fontWeight: 'bold' }}>
-									Today&apos;s Orders
-								</TableCell>
-								<TableCell
-									onClick={() => handleSort('favorite')}
-									style={{ cursor: 'pointer', fontWeight: 'bold' }}
-								>
-									Actions{' '}
-									{sortColumn === 'favorite'
-										? sortDirection === 'asc'
-											? '↑'
-											: '↓'
-										: ''}
-								</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{sortedVehicles.map((vehicle) => (
-								<TableRow key={vehicle.plateNumber}>
-									<TableCell>{vehicle.plateNumber}</TableCell>
-									<TableCell>{vehicle.capacity}</TableCell>
-									<TableCell>{vehicle.availableCapacity}</TableCell>
-									<TableCell>
-										{orders
-											.filter(
-												(order) => order.vehiclePlate === vehicle.plateNumber
-											)
-											.map((order) => (
-												<Box key={order.id}>
-													<Typography>
-														{order.destination} - {order.weight} kg
-													</Typography>
-												</Box>
-											))}
-									</TableCell>
-									<TableCell>
-										<Button
-											onClick={() => handleToggleFavorite(vehicle.plateNumber)}
-											sx={{
-												color: vehicle.favorite ? 'gray' : 'green',
-											}}
-										>
-											{vehicle.favorite ? 'Unfavorite' : 'Favorite'}
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</TableContainer>
+				<VehicleList
+					vehicles={sortedVehicles}
+					orders={orders}
+					onToggleFavorite={handleToggleFavorite}
+					handleSort={handleSort}
+					sortColumn={sortColumn}
+					sortDirection={sortDirection}
+				/>
 			)}
 
 			<VehicleSelectionDialog

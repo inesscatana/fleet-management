@@ -1,6 +1,4 @@
-'use client'
-
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
 	Dialog,
 	DialogTitle,
@@ -9,22 +7,21 @@ import {
 	Button,
 	Box,
 } from '@mui/material'
-import { useDispatch } from 'react-redux'
-import { addOrder, Order, updateOrder } from '../redux/slices/ordersSlice'
-import { AppDispatch } from '../redux/store'
+import { Order } from '@/redux/slices/ordersSlice'
 
 interface AddOrderFormProps {
-	onClose: () => void
 	open: boolean
-	order?: Order | null
+	onClose: () => void
+	order: Order | null
+	onSave: (updatedOrder: Order) => void
 }
 
 const AddOrderForm: React.FC<AddOrderFormProps> = ({
-	onClose,
 	open,
+	onClose,
 	order,
+	onSave,
 }) => {
-	const dispatch = useDispatch<AppDispatch>()
 	const [orderData, setOrderData] = useState<Order>({
 		id: '',
 		weight: 0,
@@ -33,12 +30,11 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 		coordinates: [0, 0],
 	})
 
-	// Preencher os dados ao abrir o modal para editar um pedido existente
+	// Fill in the data when opening the modal for editing or clear for a new order
 	useEffect(() => {
 		if (order) {
 			setOrderData(order)
 		} else {
-			// Resetar os campos se o pedido não estiver definido
 			setOrderData({
 				id: '',
 				weight: 0,
@@ -49,50 +45,44 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 		}
 	}, [order])
 
-	// Atualizar dados de acordo com os inputs do usuário
+	// Update data based on user input, including parsing of coordinates
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target
 		setOrderData((prevData) => ({
 			...prevData,
 			[name]:
 				name === 'coordinates'
-					? (value.split(',').map(Number) as [number, number])
+					? (value.split(',').map(Number) as [number, number]) // Split and convert coordinates
 					: name === 'weight'
-					? Number(value)
+					? Number(value) // Convert weight to number
 					: value,
 		}))
 	}
 
-	// Submeter os dados ao Redux
+	// Submit data based on the current state (adding or updating)
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
-		if (order) {
-			// Atualiza o pedido existente
-			dispatch(updateOrder(orderData))
-		} else {
-			// Adiciona um novo pedido
-			dispatch(addOrder(orderData))
-		}
-		onClose() // Fechar modal após envio
+		onSave(orderData) // Call onSave function to update or add the order
+		onClose() // Close modal after submission
 	}
 
 	return (
 		<Dialog open={open} onClose={onClose}>
-			<DialogTitle>{order ? 'Editar Pedido' : 'Adicionar Pedido'}</DialogTitle>
+			<DialogTitle>{order ? 'Edit Order' : 'Add Order'}</DialogTitle>
 			<DialogContent>
 				<form onSubmit={handleSubmit}>
 					<TextField
-						label="ID do Pedido"
+						label="Order ID"
 						name="id"
 						value={orderData.id}
 						onChange={handleChange}
 						required
 						fullWidth
 						margin="normal"
-						disabled={!!order} // Desativa o campo ID se for uma edição
+						disabled={!!order} // Disable ID field if it's an edit
 					/>
 					<TextField
-						label="Peso"
+						label="Weight"
 						name="weight"
 						type="number"
 						value={orderData.weight}
@@ -102,7 +92,7 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 						margin="normal"
 					/>
 					<TextField
-						label="Destino"
+						label="Destination"
 						name="destination"
 						value={orderData.destination}
 						onChange={handleChange}
@@ -111,17 +101,17 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 						margin="normal"
 					/>
 					<TextField
-						label="Coordenadas (lat, lon)"
+						label="Coordinates (lat, lon)"
 						name="coordinates"
 						value={(orderData.coordinates ?? [0, 0]).join(',')}
 						onChange={handleChange}
 						required
 						fullWidth
 						margin="normal"
-						helperText="Insira as coordenadas separadas por vírgula (e.g., 38.716, -9.139)"
+						helperText="Enter coordinates separated by comma (e.g., 38.716, -9.139)"
 					/>
 					<TextField
-						label="Observações"
+						label="Observations"
 						name="observations"
 						value={orderData.observations || ''}
 						onChange={handleChange}
@@ -130,10 +120,10 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 					/>
 					<Box display="flex" justifyContent="flex-end" mt={2}>
 						<Button type="submit" color="primary" variant="contained">
-							{order ? 'Salvar Alterações' : 'Adicionar Pedido'}
+							{order ? 'Save Changes' : 'Add Order'}
 						</Button>
 						<Button onClick={onClose} sx={{ ml: 2 }}>
-							Cancelar
+							Cancel
 						</Button>
 					</Box>
 				</form>

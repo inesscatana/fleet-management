@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 
 import { calculateDistances } from '@/utils/hereApi'
 import axiosInstance from '@/app/api/axiosInstance'
+import { RootState } from '../store'
 
 export interface Order {
 	id: string
@@ -34,24 +35,25 @@ export const fetchOrders = createAsyncThunk(
 	}
 )
 
-// Thunk para ordenar pedidos por distância
-export const sortOrdersByDistance = createAsyncThunk(
-	'orders/sortOrdersByDistance',
-	async () => {
-		const response = await axiosInstance.get('/orders')
-		const orders = response.data
-		const fintechHouseCoordinates: [number, number] = [38.71814, -9.14552]
+// Thunk para calcular a rota ideal
+export const calculateOptimalRoute = createAsyncThunk(
+	'orders/calculateOptimalRoute',
+	async (_, { getState }) => {
+		const state = getState() as RootState
+		const orders = state.orders.orders.filter((order) => !order.completed)
+		const startCoordinates: [number, number] = [38.71814, -9.14552] // Fintech House em Lisboa
 
+		// Obtém as distâncias entre o ponto de início e cada pedido
 		const distances = await calculateDistances(
-			fintechHouseCoordinates,
-			orders.map((order: Order) => order.coordinates)
+			startCoordinates,
+			orders.map((order) => order.coordinates)
 		)
 
-		// Ordenar os pedidos com base nas distâncias calculadas
-		const sortedOrders = orders.sort((a: Order, b: Order) => {
-			const distanceA = distances.find((d: any) => d.id === a.id)?.distance
-			const distanceB = distances.find((d: any) => d.id === b.id)?.distance
-			return (distanceA ?? 0) - (distanceB ?? 0)
+		// Ordena os pedidos com base nas distâncias para o ponto inicial
+		const sortedOrders = [...orders].sort((a, b) => {
+			const distanceA = distances.find((d) => d.id === a.id)?.distance || 0
+			const distanceB = distances.find((d) => d.id === b.id)?.distance || 0
+			return distanceA - distanceB
 		})
 
 		return sortedOrders
@@ -109,7 +111,7 @@ const ordersSlice = createSlice({
 		builder.addCase(fetchOrders.fulfilled, (state, action) => {
 			state.orders = action.payload
 		})
-		builder.addCase(sortOrdersByDistance.fulfilled, (state, action) => {
+		builder.addCase(calculateOptimalRoute.fulfilled, (state, action) => {
 			state.orders = action.payload
 		})
 	},

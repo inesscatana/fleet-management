@@ -15,7 +15,6 @@ export const calculateDistances = async (
 ): Promise<DistanceResult[]> => {
 	if (!HERE_API_KEY) throw new Error('HERE API Key is not defined')
 
-	// Configurar cada destino como um "waypoint"
 	const distanceResults: DistanceResult[] = []
 	for (const [index, coords] of destinations.entries()) {
 		const url = `${BASE_URL}?transportMode=car&origin=${startCoordinates[0]},${startCoordinates[1]}&destination=${coords[0]},${coords[1]}&return=summary&apikey=${HERE_API_KEY}`
