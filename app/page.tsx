@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback, Suspense } from 'react'
 import {
 	Box,
 	Typography,
@@ -11,16 +11,14 @@ import {
 	Tab,
 	Badge,
 } from '@mui/material'
-
 import { toast } from 'react-toastify'
 import { useAppSelector, useAppDispatch } from '@/hooks'
+
 import {
 	fetchVehicles,
 	toggleFavoriteVehicle,
 	updateVehicle,
 } from '@/redux/slices/vehiclesSlice'
-import AddOrderForm from '@/components/AddOrderForm'
-import VehicleSelectionDialog from '@/components/VehicleSelectionDialog'
 import {
 	assignOrderToVehicle,
 	Order,
@@ -30,17 +28,19 @@ import {
 	updateOrder,
 	addOrder,
 } from '@/redux/slices/ordersSlice'
+
+import AddOrderForm from '@/components/AddOrderForm'
+import VehicleSelectionDialog from '@/components/VehicleSelectionDialog'
 import VehicleList from '@/components/VehicleList'
 import OrderList from '@/components/OrderList'
 
-export type SortColumn =
-	| 'id'
-	| 'destination'
-	| 'weight'
-	| 'capacity'
-	| 'availableCapacity'
-	| 'favorite'
-type SortDirection = 'asc' | 'desc'
+import {
+	SortColumn,
+	SortDirection,
+	sortOrders,
+	sortVehicles,
+} from '@/utils/sortHelper'
+import { createDebouncedSearch } from '@/utils/debounceHelper'
 
 export default function DashboardPage() {
 	const orders = useAppSelector((state) => state.orders.orders)
@@ -57,22 +57,22 @@ export default function DashboardPage() {
 	const [loadingOrders, setLoadingOrders] = useState(true)
 	const [loadingVehicles, setLoadingVehicles] = useState(true)
 
+	const debouncedSearch = useMemo(
+		() => createDebouncedSearch(setSearchQuery),
+		[]
+	)
+
 	useEffect(() => {
-		const loadOrders = async () => {
-			setLoadingOrders(true)
-			await dispatch(fetchOrders())
-			await dispatch(calculateOptimalRoute())
+		setLoadingOrders(true)
+		setLoadingVehicles(true)
+
+		Promise.all([
+			dispatch(fetchOrders()).then(() => dispatch(calculateOptimalRoute())),
+			dispatch(fetchVehicles()),
+		]).finally(() => {
 			setLoadingOrders(false)
-		}
-
-		const loadVehicles = async () => {
-			setLoadingVehicles(true)
-			await dispatch(fetchVehicles())
 			setLoadingVehicles(false)
-		}
-
-		loadOrders()
-		loadVehicles()
+		})
 	}, [dispatch])
 
 	const handleEditOrder = (order: Order) => {
@@ -125,14 +125,12 @@ export default function DashboardPage() {
 		toast.info(`Vehicle ${vehicleId} updated successfully!`)
 	}
 
-	const handleSort = (column: SortColumn) => {
-		if (sortColumn === column) {
-			setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-		} else {
-			setSortColumn(column)
-			setSortDirection('asc')
-		}
-	}
+	const handleSort = useCallback((column: SortColumn) => {
+		setSortColumn(column)
+		setSortDirection((prevDirection) =>
+			prevDirection === 'asc' ? 'desc' : 'asc'
+		)
+	}, [])
 
 	const handleSaveOrder = (order: Order) => {
 		if (selectedOrder) {
@@ -154,54 +152,39 @@ export default function DashboardPage() {
 		}
 	}
 
-	const inProgressOrders = orders
-		.filter(
-			(order) =>
-				!order.completed &&
-				order.destination.toLowerCase().includes(searchQuery.toLowerCase())
+	const filteredOrders = useMemo(() => {
+		const filtered = orders.filter((order) =>
+			order.destination.toLowerCase().includes(searchQuery.toLowerCase())
 		)
-		.sort((a, b) => {
-			let comparison = 0
-			if (sortColumn === 'id') {
-				comparison = a.id.localeCompare(b.id)
-			} else if (sortColumn === 'destination') {
-				comparison = a.destination.localeCompare(b.destination)
-			} else if (sortColumn === 'weight') {
-				comparison = a.weight - b.weight
-			}
-			return sortDirection === 'asc' ? comparison : -comparison
-		})
+		return sortOrders(filtered, sortColumn, sortDirection)
+	}, [orders, searchQuery, sortColumn, sortDirection])
 
-	const completedOrders = orders
+	const inProgressOrders = useMemo(
+		() => filteredOrders.filter((order) => !order.completed),
+		[filteredOrders]
+	)
+	const completedOrders = useMemo(
+		() => filteredOrders.filter((order) => order.completed),
+		[filteredOrders]
+	)
+	const sortedVehicles = useMemo(
+		() => sortVehicles(vehicles, sortColumn, sortDirection),
+		[vehicles, sortColumn, sortDirection]
+	)
 
-		.filter((order) => order.completed)
-		.sort((a, b) => {
-			let comparison = 0
-			if (sortColumn === 'id') {
-				comparison = a.id.localeCompare(b.id)
-			} else if (sortColumn === 'destination') {
-				comparison = a.destination.localeCompare(b.destination)
-			} else if (sortColumn === 'weight') {
-				comparison = a.weight - b.weight
-			}
-			return sortDirection === 'asc' ? comparison : -comparison
-		})
+	const handleSearchChange = useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			debouncedSearch(event.target.value)
+		},
+		[debouncedSearch]
+	)
 
-	const sortedVehicles = [...vehicles].sort((a, b) => {
-		let comparison = 0
-		if (sortColumn === 'capacity') {
-			comparison = a.capacity - b.capacity
-		} else if (sortColumn === 'availableCapacity') {
-			comparison = a.availableCapacity - b.availableCapacity
-		} else if (sortColumn === 'favorite') {
-			comparison = a.favorite === b.favorite ? 0 : a.favorite ? -1 : 1
-		}
-		return sortDirection === 'asc' ? comparison : -comparison
-	})
-
-	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-		setSelectedTab(newValue)
-	}
+	const handleTabChange = useCallback(
+		(event: React.SyntheticEvent, newValue: number) => {
+			setSelectedTab(newValue)
+		},
+		[]
+	)
 
 	return (
 		<Box p={3}>
@@ -215,8 +198,7 @@ export default function DashboardPage() {
 				fullWidth
 				placeholder="Enter order destination..."
 				sx={{ mb: 2 }}
-				value={searchQuery}
-				onChange={(e) => setSearchQuery(e.target.value)}
+				onChange={handleSearchChange}
 				color="secondary"
 			/>
 
@@ -232,14 +214,23 @@ export default function DashboardPage() {
 				Create New Order
 			</Button>
 
-			{showOrderForm && (
-				<AddOrderForm
-					onClose={() => setShowOrderForm(false)}
-					open={showOrderForm}
-					order={selectedOrder}
-					onSave={handleSaveOrder}
+			<Suspense fallback={<CircularProgress />}>
+				{showOrderForm && (
+					<AddOrderForm
+						onClose={() => setShowOrderForm(false)}
+						open={showOrderForm}
+						order={selectedOrder}
+						onSave={handleSaveOrder}
+					/>
+				)}
+
+				<VehicleSelectionDialog
+					open={showVehicleModal}
+					onClose={() => setShowVehicleModal(false)}
+					vehicles={vehicles}
+					onSelectVehicle={handleVehicleSelect}
 				/>
-			)}
+			</Suspense>
 
 			<Typography variant="h5" gutterBottom color="primary">
 				Orders
