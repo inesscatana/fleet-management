@@ -5,19 +5,13 @@ import {
 	Box,
 	Typography,
 	Button,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Paper,
-	IconButton,
 	TextField,
 	CircularProgress,
+	Tabs,
+	Tab,
+	Badge,
 } from '@mui/material'
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
+
 import { toast } from 'react-toastify'
 import { useAppSelector, useAppDispatch } from '@/hooks'
 import {
@@ -32,7 +26,9 @@ import {
 	Order,
 	removeOrder,
 	calculateOptimalRoute,
+	fetchOrders,
 	updateOrder,
+	addOrder,
 } from '@/redux/slices/ordersSlice'
 import VehicleList from '@/components/VehicleList'
 import OrderList from '@/components/OrderList'
@@ -44,7 +40,6 @@ export type SortColumn =
 	| 'capacity'
 	| 'availableCapacity'
 	| 'favorite'
-	| 'status'
 type SortDirection = 'asc' | 'desc'
 
 export default function DashboardPage() {
@@ -53,6 +48,7 @@ export default function DashboardPage() {
 	const dispatch = useAppDispatch()
 
 	const [showOrderForm, setShowOrderForm] = useState(false)
+	const [selectedTab, setSelectedTab] = useState(0)
 	const [showVehicleModal, setShowVehicleModal] = useState(false)
 	const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 	const [searchQuery, setSearchQuery] = useState('')
@@ -64,6 +60,7 @@ export default function DashboardPage() {
 	useEffect(() => {
 		const loadOrders = async () => {
 			setLoadingOrders(true)
+			await dispatch(fetchOrders())
 			await dispatch(calculateOptimalRoute())
 			setLoadingOrders(false)
 		}
@@ -137,9 +134,14 @@ export default function DashboardPage() {
 		}
 	}
 
-	const handleSaveOrder = (updatedOrder: Order) => {
-		dispatch(updateOrder(updatedOrder))
-		toast.success('Order updated successfully!')
+	const handleSaveOrder = (order: Order) => {
+		if (selectedOrder) {
+			dispatch(updateOrder(order))
+			toast.success('Order updated successfully!')
+		} else {
+			dispatch(addOrder(order))
+			toast.success('Order created successfully!')
+		}
 		setShowOrderForm(false)
 		setSelectedOrder(null)
 	}
@@ -152,23 +154,36 @@ export default function DashboardPage() {
 		}
 	}
 
-	const filteredOrders = orders
-		.filter((order) =>
-			order.destination.toLowerCase().includes(searchQuery.toLowerCase())
+	const inProgressOrders = orders
+		.filter(
+			(order) =>
+				!order.completed &&
+				order.destination.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 		.sort((a, b) => {
 			let comparison = 0
-
 			if (sortColumn === 'id') {
 				comparison = a.id.localeCompare(b.id)
 			} else if (sortColumn === 'destination') {
 				comparison = a.destination.localeCompare(b.destination)
 			} else if (sortColumn === 'weight') {
 				comparison = a.weight - b.weight
-			} else if (sortColumn === 'status') {
-				comparison = Number(a.completed) - Number(b.completed)
 			}
+			return sortDirection === 'asc' ? comparison : -comparison
+		})
 
+	const completedOrders = orders
+
+		.filter((order) => order.completed)
+		.sort((a, b) => {
+			let comparison = 0
+			if (sortColumn === 'id') {
+				comparison = a.id.localeCompare(b.id)
+			} else if (sortColumn === 'destination') {
+				comparison = a.destination.localeCompare(b.destination)
+			} else if (sortColumn === 'weight') {
+				comparison = a.weight - b.weight
+			}
 			return sortDirection === 'asc' ? comparison : -comparison
 		})
 
@@ -183,6 +198,10 @@ export default function DashboardPage() {
 		}
 		return sortDirection === 'asc' ? comparison : -comparison
 	})
+
+	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+		setSelectedTab(newValue)
+	}
 
 	return (
 		<Box p={3}>
@@ -225,13 +244,52 @@ export default function DashboardPage() {
 			<Typography variant="h5" gutterBottom color="primary">
 				Orders
 			</Typography>
+
+			<Tabs
+				value={selectedTab}
+				onChange={handleTabChange}
+				aria-label="Order status tabs"
+			>
+				<Tab
+					label={
+						<Badge
+							color="primary"
+							badgeContent={inProgressOrders.length}
+							max={99}
+							overlap="rectangular"
+							sx={{
+								'& .MuiBadge-badge': {
+									fontSize: '0.7rem',
+									height: '18px',
+									minWidth: '18px',
+								},
+							}}
+						>
+							In Progress
+						</Badge>
+					}
+				/>
+				<Tab label="Completed" />
+			</Tabs>
+
 			{loadingOrders ? (
 				<Box display="flex" justifyContent="center" my={4}>
 					<CircularProgress color="secondary" />
 				</Box>
+			) : selectedTab === 0 ? (
+				<OrderList
+					orders={inProgressOrders}
+					onEditOrder={handleEditOrder}
+					onCompleteOrder={handleCompleteOrder}
+					onRemoveOrder={handleRemoveOrder}
+					onAssignVehicle={handleAssignVehicle}
+					handleSort={handleSort}
+					sortColumn={sortColumn}
+					sortDirection={sortDirection}
+				/>
 			) : (
 				<OrderList
-					orders={filteredOrders}
+					orders={completedOrders}
 					onEditOrder={handleEditOrder}
 					onCompleteOrder={handleCompleteOrder}
 					onRemoveOrder={handleRemoveOrder}

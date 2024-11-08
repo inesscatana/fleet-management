@@ -41,7 +41,7 @@ export const calculateOptimalRoute = createAsyncThunk(
 	async (_, { getState }) => {
 		const state = getState() as RootState
 		const orders = state.orders.orders.filter((order) => !order.completed)
-		const startCoordinates: [number, number] = [38.71814, -9.14552] // Fintech House em Lisboa
+		const startCoordinates: [number, number] = [38.71814, -9.14552]
 
 		// Obtém as distâncias entre o ponto de início e cada pedido
 		const distances = await calculateDistances(
@@ -49,12 +49,11 @@ export const calculateOptimalRoute = createAsyncThunk(
 			orders.map((order) => order.coordinates)
 		)
 
-		// Ordena os pedidos com base nas distâncias para o ponto inicial
-		const sortedOrders = [...orders].sort((a, b) => {
-			const distanceA = distances.find((d) => d.id === a.id)?.distance || 0
-			const distanceB = distances.find((d) => d.id === b.id)?.distance || 0
-			return distanceA - distanceB
-		})
+		// Ordena os pedidos por distância sem modificar o campo `completed`
+		const sortedOrders = [...state.orders.orders].map((order) => ({
+			...order,
+			...(distances.find((d) => d.id === order.id) || {}),
+		}))
 
 		return sortedOrders
 	}

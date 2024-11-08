@@ -81,17 +81,8 @@ const OrderList: React.FC<OrderListProps> = ({
 									: '↓'
 								: ''}
 						</TableCell>
-						<TableCell
-							onClick={() => handleSort('status')}
-							style={{ cursor: 'pointer', fontWeight: 'bold' }}
-						>
-							Status{' '}
-							{sortColumn === 'status'
-								? sortDirection === 'asc'
-									? '↑'
-									: '↓'
-								: ''}
-						</TableCell>
+						<TableCell sx={{ fontWeight: 'bold' }}>Observations</TableCell>
+						<TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
 						<TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
 					</TableRow>
 				</TableHead>
@@ -100,13 +91,14 @@ const OrderList: React.FC<OrderListProps> = ({
 						<TableRow
 							key={order.id}
 							sx={{
-								backgroundColor: order.completed ? '#d3f9d8' : 'inherit',
+								backgroundColor: order.vehiclePlate ? 'inherit' : '#fdf1f1',
 								opacity: order.completed ? 0.6 : 1,
 							}}
 						>
 							<TableCell>{order.id}</TableCell>
 							<TableCell>{order.destination}</TableCell>
 							<TableCell>{order.weight}</TableCell>
+							<TableCell>{order.observations || 'N/A'}</TableCell>
 							<TableCell>
 								{order.completed ? (
 									<Box display="flex" alignItems="center">
