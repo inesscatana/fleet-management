@@ -31,7 +31,6 @@ A fleet management dashboard application built with Next.js, Redux, and Material
 - **Backend Simulation**: JSON Server (via Docker)
 - **API**: HERE API for distance calculations
 - **Notifications**: React Toastify
-- **Testing**: Jest, React Testing Library (optional)
 - **Containerization**: Docker, Docker Compose
 
 ## Setup Instructions
@@ -101,7 +100,8 @@ The project includes a Docker setup for consistent and isolated development.
 
 ## Future Improvements
 
-- **Continuous Integration**: Set up automated testing and CI/CD pipeline using GitHub Actions or CircleCI.
-- **Enhanced Testing**: Expand Jest and React Testing Library tests for comprehensive coverage.
-- **User Authentication**: Add user authentication for enhanced security.
-- **Real-time Notifications**: Implement WebSocket or server-sent events for live updates on orders and vehicle statuses.
+- **Continuous Integration**: Set up an automated CI/CD pipeline using GitHub Actions or CircleCI to run tests on every push and pull request.
+- **Comprehensive Testing Suite**: Introduce Jest and React Testing Library for unit and integration tests, covering critical components like order and vehicle management, API interactions, and state management to ensure reliability and maintainability.
+- **Backend**: Replace the JSON server with a real backend powered by Node.js and MongoDB for persistent data storage, enabling the application to handle larger datasets and scale as needed.
+- **User Authentication**: Add user authentication to enhance security and allow for role-based access control.
+- **Real-time Notifications**: Implement WebSocket or server-sent events to provide live updates on order and vehicle statuses, improving the user experience for fleet managers and drivers.
