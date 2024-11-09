@@ -15,14 +15,16 @@ A fleet management dashboard application built with Next.js, Redux, and Material
 
 ## Features
 
-- **Order Management**: Create, edit, assign, and complete delivery orders. Orders include information such as weight, destination, observations, and vehicle assignment.
-- **Vehicle Management**: Track vehicles with details on maximum capacity and available capacity. Mark vehicles as favorites for quicker assignment.
-- **Optimal Route Calculation**: Calculate the optimal order sequence for a vehicle based on distance from a starting point using the HERE API.
-- **Search and Sorting**: Search for orders by destination and sort both orders and vehicles based on various attributes.
-- **Persistent Notifications**: Show notifications for key actions (e.g., order assignment, deletion, and completion).
-- **Data Persistence**: Store order and vehicle information through API calls using a JSON server.
-- **User-Friendly UI**: Use Material UI for a polished interface, including modals for creating/editing orders and assigning vehicles.
-- **Containerized Development**: Use Docker for consistent and easy setup across environments.
+- **Order Management**: Create, edit, assign, and complete delivery orders, each containing critical information such as weight, destination, observations, and assigned vehicle. Every order affects the vehicle's available capacity.
+- **Vehicle Management**: Track vehicle details, including maximum and available capacity. Mark vehicles as favorites to prioritize them in selection lists, facilitating quicker assignment for high-priority vehicles.
+- **Optimal Route Calculation**: Use the HERE API to calculate the optimal delivery sequence for each vehicle, minimizing travel distances and optimizing routes from the starting location (Fintech House in Lisbon).
+- **Real-time Capacity Updates**: Automatically update each vehicle’s available capacity as orders are assigned or completed, ensuring accurate tracking and preventing overloading.
+- **Search and Sorting**: Easily search for orders by destination and sort both orders and vehicles based on various attributes, such as weight, capacity, and favorites.
+- **Persistent Notifications**: Display notifications for key actions like order assignment, deletion, and completion, providing immediate feedback and helping users monitor ongoing operations.
+- **Data Persistence**: Simulate persistent storage of order and vehicle data through API calls to a JSON server, enabling easy testing and local development.
+- **Polished UI with Modals for Enhanced Interaction**: Built with Material UI, the interface uses modals for focused interactions, such as creating/editing orders and assigning vehicles, resulting in a user-friendly experience.
+- **Event-driven Actions**: Trigger automatic updates for key events, such as adjusting available capacity upon order completion, to provide a near real-time experience for managers.
+- **Containerized Development**: Leverage Docker for consistent setup across environments, with separate services for the main application and JSON server.
 
 ## Tech Stack
 
