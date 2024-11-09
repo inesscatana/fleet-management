@@ -97,10 +97,10 @@ const VehicleList: React.FC<VehicleListProps> = ({
 								<Button
 									onClick={() => onToggleFavorite(vehicle.plateNumber)}
 									sx={{
-										color: vehicle.favorite ? 'gray' : 'green',
+										color: vehicle.favorite ? 'green' : 'gray',
 									}}
 								>
-									{vehicle.favorite ? 'Unfavorite' : 'Favorite'}
+									{vehicle.favorite ? 'Favorite' : 'Unfavorite'}
 								</Button>
 							</TableCell>
 						</TableRow>

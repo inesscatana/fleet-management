@@ -138,6 +138,9 @@ export default function DashboardPage() {
 		setShowVehicleModal(true)
 	}
 
+	const onCompleteOrder = (orderId: string) =>
+		handleCompleteOrder(orderId, orders)
+
 	return (
 		<Box p={3}>
 			<Typography variant="h4" gutterBottom color="primary">
@@ -230,7 +233,7 @@ export default function DashboardPage() {
 				<OrderList
 					orders={inProgressOrders}
 					onEditOrder={handleEditOrderWithModal}
-					onCompleteOrder={handleCompleteOrder}
+					onCompleteOrder={onCompleteOrder}
 					onRemoveOrder={handleRemoveOrder}
 					onAssignVehicle={handleOpenVehicleModal}
 					handleSort={handleSort}
@@ -241,7 +244,7 @@ export default function DashboardPage() {
 				<OrderList
 					orders={completedOrders}
 					onEditOrder={handleEditOrderWithModal}
-					onCompleteOrder={handleCompleteOrder}
+					onCompleteOrder={onCompleteOrder}
 					onRemoveOrder={handleRemoveOrder}
 					onAssignVehicle={handleOpenVehicleModal}
 					handleSort={handleSort}

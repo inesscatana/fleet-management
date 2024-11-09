@@ -67,10 +67,16 @@ export default function useDashboardHandlers() {
 		setSelectedOrder(null)
 	}
 
-	const handleCompleteOrder = () => {
-		if (selectedOrder) {
-			dispatch(updateOrder({ ...selectedOrder, completed: true }))
-			toast.success('Order marked as complete!')
+	const handleCompleteOrder = (orderId: string, orders: Order[]) => {
+		const orderToComplete = orders.find((order) => order.id === orderId)
+
+		if (orderToComplete) {
+			if (orderToComplete.vehiclePlate) {
+				dispatch(updateOrder({ ...orderToComplete, completed: true }))
+				toast.success('Order marked as complete!')
+			} else {
+				toast.error('Assign the order to a vehicle before completing it.')
+			}
 		} else {
 			toast.error("Can't complete an order without selecting one.")
 		}
