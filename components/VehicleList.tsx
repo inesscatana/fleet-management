@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import { Vehicle } from '@/redux/slices/vehiclesSlice'
 import { Order } from '@/redux/slices/ordersSlice'
-import { SortColumn } from '@/app/page'
+import { SortColumn } from '@/utils/sortHelper'
 
 interface VehicleListProps {
 	vehicles: Vehicle[]

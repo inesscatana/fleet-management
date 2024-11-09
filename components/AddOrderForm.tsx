@@ -62,8 +62,8 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 	// Submit data based on the current state (adding or updating)
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
-		onSave(orderData) // Call onSave function to update or add the order
-		onClose() // Close modal after submission
+		onSave(orderData)
+		onClose()
 	}
 
 	return (
@@ -79,7 +79,7 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({
 						required
 						fullWidth
 						margin="normal"
-						disabled={!!order} // Disable ID field if it's an edit
+						disabled={!!order}
 					/>
 					<TextField
 						label="Weight"

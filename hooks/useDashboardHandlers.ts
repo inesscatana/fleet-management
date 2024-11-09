@@ -13,6 +13,7 @@ import { useState } from 'react'
 export default function useDashboardHandlers() {
 	const dispatch = useAppDispatch()
 	const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+	const [vehicles, setVehicles] = useState<Vehicle[]>([])
 
 	const handleEditOrder = (order: Order) => {
 		setSelectedOrder(order)
@@ -27,15 +28,15 @@ export default function useDashboardHandlers() {
 		setSelectedOrder(order)
 	}
 
-	const handleVehicleSelect = (vehicleId: string, vehicles: Vehicle[]) => {
-		const vehicle = vehicles.find((v) => v.plateNumber === vehicleId)
+	const handleVehicleSelect = (vehiclePlate: string) => {
+		const vehicle = vehicles.find((v) => v.plateNumber === vehiclePlate)
 
 		if (vehicle && selectedOrder) {
 			if (selectedOrder.weight <= vehicle.availableCapacity) {
 				dispatch(
 					assignOrderToVehicle({
 						orderId: selectedOrder.id,
-						vehiclePlate: vehicleId,
+						vehiclePlate,
 					})
 				)
 
@@ -45,10 +46,10 @@ export default function useDashboardHandlers() {
 				}
 				dispatch(updateVehicle(updatedVehicleCapacity))
 
-				toast.success(`Order successfully assigned to vehicle ${vehicleId}!`)
+				toast.success(`Order successfully assigned to vehicle ${vehiclePlate}!`)
 			} else {
 				toast.error(
-					`Insufficient capacity to assign order to vehicle ${vehicleId}.`
+					`Insufficient capacity to assign order to vehicle ${vehiclePlate}.`
 				)
 			}
 		}
@@ -84,5 +85,6 @@ export default function useDashboardHandlers() {
 		handleCompleteOrder,
 		setSelectedOrder,
 		selectedOrder,
+		setVehicles,
 	}
 }

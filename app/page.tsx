@@ -11,28 +11,24 @@ import {
 	Tab,
 	Badge,
 } from '@mui/material'
-import { toast } from 'react-toastify'
-import { useAppSelector, useAppDispatch } from '@/hooks'
+
+import { useAppDispatch, useAppSelector } from '@/hooks'
 
 import {
 	fetchVehicles,
 	toggleFavoriteVehicle,
-	updateVehicle,
 } from '@/redux/slices/vehiclesSlice'
 import {
-	assignOrderToVehicle,
-	Order,
-	removeOrder,
-	calculateOptimalRoute,
 	fetchOrders,
-	updateOrder,
-	addOrder,
+	calculateOptimalRoute,
+	Order,
 } from '@/redux/slices/ordersSlice'
 
 import AddOrderForm from '@/components/AddOrderForm'
 import VehicleSelectionDialog from '@/components/VehicleSelectionDialog'
 import VehicleList from '@/components/VehicleList'
 import OrderList from '@/components/OrderList'
+import useDashboardHandlers from '@/hooks/useDashboardHandlers'
 
 import {
 	SortColumn,
@@ -43,14 +39,25 @@ import {
 import { createDebouncedSearch } from '@/utils/debounceHelper'
 
 export default function DashboardPage() {
+	const dispatch = useAppDispatch()
 	const orders = useAppSelector((state) => state.orders.orders)
 	const vehicles = useAppSelector((state) => state.vehicles.vehicles)
-	const dispatch = useAppDispatch()
+
+	const {
+		handleEditOrder,
+		handleRemoveOrder,
+		handleAssignVehicle,
+		handleVehicleSelect,
+		handleSaveOrder,
+		handleCompleteOrder,
+		setSelectedOrder,
+		selectedOrder,
+		setVehicles,
+	} = useDashboardHandlers()
 
 	const [showOrderForm, setShowOrderForm] = useState(false)
 	const [selectedTab, setSelectedTab] = useState(0)
 	const [showVehicleModal, setShowVehicleModal] = useState(false)
-	const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 	const [searchQuery, setSearchQuery] = useState('')
 	const [sortColumn, setSortColumn] = useState<SortColumn>('destination')
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -67,7 +74,8 @@ export default function DashboardPage() {
 		setLoadingVehicles(true)
 
 		Promise.all([
-			dispatch(fetchOrders()).then(() => dispatch(calculateOptimalRoute())),
+			dispatch(fetchOrders()),
+			dispatch(calculateOptimalRoute()),
 			dispatch(fetchVehicles()),
 		]).finally(() => {
 			setLoadingOrders(false)
@@ -75,55 +83,9 @@ export default function DashboardPage() {
 		})
 	}, [dispatch])
 
-	const handleEditOrder = (order: Order) => {
-		setSelectedOrder(order)
-		setShowOrderForm(true)
-	}
-
-	const handleRemoveOrder = (orderId: string) => {
-		dispatch(removeOrder(orderId))
-		toast.success('Order removed successfully!')
-	}
-
-	const handleAssignVehicle = (order: Order) => {
-		setSelectedOrder(order)
-		setShowVehicleModal(true)
-	}
-
-	const handleVehicleSelect = (vehicleId: string) => {
-		const vehicle = vehicles.find((v) => v.plateNumber === vehicleId)
-
-		if (vehicle && selectedOrder) {
-			if (selectedOrder.weight <= vehicle.availableCapacity) {
-				dispatch(
-					assignOrderToVehicle({
-						orderId: selectedOrder.id,
-						vehiclePlate: vehicleId,
-					})
-				)
-
-				const updatedVehicleCapacity = {
-					...vehicle,
-					availableCapacity: vehicle.availableCapacity - selectedOrder.weight,
-				}
-				dispatch(updateVehicle(updatedVehicleCapacity))
-
-				toast.success(`Order successfully assigned to vehicle ${vehicleId}!`)
-				toast.info('New order assigned! Check your next destination.')
-				setShowVehicleModal(false)
-				setSelectedOrder(null)
-			} else {
-				toast.error(
-					`Insufficient capacity to assign order to vehicle ${vehicleId}.`
-				)
-			}
-		}
-	}
-
-	const handleToggleFavorite = (vehicleId: string) => {
-		dispatch(toggleFavoriteVehicle(vehicleId))
-		toast.info(`Vehicle ${vehicleId} updated successfully!`)
-	}
+	useEffect(() => {
+		setVehicles(vehicles)
+	}, [vehicles, setVehicles])
 
 	const handleSort = useCallback((column: SortColumn) => {
 		setSortColumn(column)
@@ -132,24 +94,9 @@ export default function DashboardPage() {
 		)
 	}, [])
 
-	const handleSaveOrder = (order: Order) => {
-		if (selectedOrder) {
-			dispatch(updateOrder(order))
-			toast.success('Order updated successfully!')
-		} else {
-			dispatch(addOrder(order))
-			toast.success('Order created successfully!')
-		}
-		setShowOrderForm(false)
-		setSelectedOrder(null)
-	}
-
-	const handleCompleteOrder = (orderId: string) => {
-		const order = orders.find((o) => o.id === orderId)
-		if (order) {
-			dispatch(updateOrder({ ...order, completed: true }))
-			toast.success('Order marked as complete!')
-		}
+	const handleEditOrderWithModal = (order: Order) => {
+		handleEditOrder(order)
+		setShowOrderForm(true)
 	}
 
 	const filteredOrders = useMemo(() => {
@@ -185,6 +132,11 @@ export default function DashboardPage() {
 		},
 		[]
 	)
+
+	const handleOpenVehicleModal = (order: Order) => {
+		handleAssignVehicle(order)
+		setShowVehicleModal(true)
+	}
 
 	return (
 		<Box p={3}>
@@ -228,7 +180,10 @@ export default function DashboardPage() {
 					open={showVehicleModal}
 					onClose={() => setShowVehicleModal(false)}
 					vehicles={vehicles}
-					onSelectVehicle={handleVehicleSelect}
+					onSelectVehicle={(vehiclePlate) => {
+						handleVehicleSelect(vehiclePlate)
+						setShowVehicleModal(false)
+					}}
 				/>
 			</Suspense>
 
@@ -267,13 +222,17 @@ export default function DashboardPage() {
 				<Box display="flex" justifyContent="center" my={4}>
 					<CircularProgress color="secondary" />
 				</Box>
+			) : filteredOrders.length === 0 ? (
+				<Typography variant="body1" color="textSecondary" align="center" my={4}>
+					No orders found for the specified destination.
+				</Typography>
 			) : selectedTab === 0 ? (
 				<OrderList
 					orders={inProgressOrders}
-					onEditOrder={handleEditOrder}
+					onEditOrder={handleEditOrderWithModal}
 					onCompleteOrder={handleCompleteOrder}
 					onRemoveOrder={handleRemoveOrder}
-					onAssignVehicle={handleAssignVehicle}
+					onAssignVehicle={handleOpenVehicleModal}
 					handleSort={handleSort}
 					sortColumn={sortColumn}
 					sortDirection={sortDirection}
@@ -281,10 +240,10 @@ export default function DashboardPage() {
 			) : (
 				<OrderList
 					orders={completedOrders}
-					onEditOrder={handleEditOrder}
+					onEditOrder={handleEditOrderWithModal}
 					onCompleteOrder={handleCompleteOrder}
 					onRemoveOrder={handleRemoveOrder}
-					onAssignVehicle={handleAssignVehicle}
+					onAssignVehicle={handleOpenVehicleModal}
 					handleSort={handleSort}
 					sortColumn={sortColumn}
 					sortDirection={sortDirection}
@@ -302,13 +261,14 @@ export default function DashboardPage() {
 				<VehicleList
 					vehicles={sortedVehicles}
 					orders={orders}
-					onToggleFavorite={handleToggleFavorite}
+					onToggleFavorite={(vehicleId) => {
+						dispatch(toggleFavoriteVehicle(vehicleId))
+					}}
 					handleSort={handleSort}
 					sortColumn={sortColumn}
 					sortDirection={sortDirection}
 				/>
 			)}
-
 			<VehicleSelectionDialog
 				open={showVehicleModal}
 				onClose={() => setShowVehicleModal(false)}
